@@ -1,5 +1,14 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@stores/*": ["src/app/stores/*"],
+      "@ToDo/*": ["src/models/ToDo/*"],
+      "@Status/*": ["src/models/Status/*"],
+      "@api/*": ["src/app/api/*"],
+      "@utils/*": ["src/app/common/utils/*"],
+    },
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "target": "ES2020",
     "useDefineForClassFields": true,
