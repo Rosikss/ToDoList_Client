@@ -10,6 +10,7 @@ import { ToDo, ToDoCreateDTO, ToDoUpdateDTO } from "@ToDo/todo.model.ts";
 import { Status } from "@Status/status.model.ts";
 import "react-toastify/dist/ReactToastify.css";
 import showErrorMessage from "@utils/ErrorToastMessage.ts";
+import { AxiosError } from "axios";
 
 class TodoStore {
   todos: ToDo[] = [];
@@ -26,7 +27,9 @@ class TodoStore {
         this.todos = data;
       });
     } catch (error) {
-      showErrorMessage(error);
+      if (error instanceof AxiosError) {
+        showErrorMessage(error);
+      }
     }
   }
 
@@ -37,7 +40,9 @@ class TodoStore {
         this.statuses = data;
       });
     } catch (error) {
-      showErrorMessage(error);
+      if (error instanceof AxiosError) {
+        showErrorMessage(error);
+      }
     }
   }
 
@@ -48,7 +53,9 @@ class TodoStore {
         this.todos.push(data);
       });
     } catch (error) {
-      showErrorMessage(error);
+      if (error instanceof AxiosError) {
+        showErrorMessage(error);
+      }
     }
   }
 
@@ -61,7 +68,9 @@ class TodoStore {
         );
       });
     } catch (error) {
-      showErrorMessage(error);
+      if (error instanceof AxiosError) {
+        showErrorMessage(error);
+      }
     }
   }
 
@@ -72,7 +81,9 @@ class TodoStore {
         this.todos = this.todos.filter((todo) => todo.id !== id);
       });
     } catch (error) {
-      showErrorMessage(error);
+      if (error instanceof AxiosError) {
+        showErrorMessage(error);
+      }
     }
   }
 }

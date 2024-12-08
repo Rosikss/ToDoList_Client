@@ -1,8 +1,25 @@
 import { Bounce, toast } from "react-toastify";
+import { AxiosError } from "axios";
 
-export default function showErrorMessage(error: any) {
-  const typedError = error as Error;
-  toast.error(typedError.message, {
+interface ValidationErrorResponse {
+  errors: Record<string, string[]>;
+}
+
+export default function showErrorMessage(error: AxiosError) {
+  const data = error.response?.data as ValidationErrorResponse | undefined;
+  if (data?.errors) {
+    for (const messages of Object.values(data.errors)) {
+      if (Array.isArray(messages)) {
+        messages.forEach((message) => {
+          showToast(message);
+        });
+      }
+    }
+  }
+}
+
+function showToast(message: string) {
+  toast.error(message, {
     position: "top-center",
     autoClose: 3000,
     hideProgressBar: false,

@@ -16,7 +16,15 @@ import {
 } from "antd";
 
 import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
+dayjs.extend(isBetween);
 import TextArea from "antd/es/input/TextArea";
+import updateLocale from "dayjs/plugin/updateLocale";
+
+dayjs.extend(updateLocale);
+dayjs.updateLocale("en", {
+  weekStart: 1,
+});
 const { Option } = Select;
 
 const TodoList: React.FC = observer(() => {
@@ -37,9 +45,13 @@ const TodoList: React.FC = observer(() => {
   const filteredTodos = filterStatus
     ? todos.filter((todo) => todo.statusName === filterStatus)
     : todos;
-
+  const { RangePicker } = DatePicker;
+  const dateFormat = "YYYY-MM-DD";
+  const startOfWeek = dayjs().startOf("week");
+  const endOfWeek = dayjs().endOf("week");
+  console.log(startOfWeek, endOfWeek);
   const menuItems = [
-    { label: "All", key: "all" }, // Reset filter option
+    { label: "All", key: "all" },
     ...statuses.map((status) => ({
       label: (
         <span style={{ color: applyColor(status.name) }}>{status.name}</span>
@@ -47,6 +59,12 @@ const TodoList: React.FC = observer(() => {
       key: status.name,
     })),
   ];
+
+  const disabledDate = (current: dayjs.Dayjs | null) => {
+    console.log(current);
+    if (!current) return false;
+    return !current.isBetween(startOfWeek, endOfWeek, "day", "[]");
+  };
 
   const dropdownMenu: MenuProps = {
     items: menuItems,
@@ -62,7 +80,7 @@ const TodoList: React.FC = observer(() => {
       await loadTodos();
       await loadStatuses();
     })();
-  }, []);
+  }, [loadStatuses, loadTodos]);
 
   function resetForm() {
     form.resetFields();
@@ -80,13 +98,17 @@ const TodoList: React.FC = observer(() => {
   }
 
   function handleOpenFormEdit(record: ToDo) {
+    console.log(record);
     setEditingTodo(record);
     form.setFieldsValue({
       ...record,
-      createdAt: dayjs(record.createdAt),
-      dueDate: dayjs(record.dueDate),
+      rangeDates: [dayjs(record.createdAt), dayjs(record.dueDate)],
     });
     setIsModalOpen(true);
+  }
+
+  function handleStatusIdChange(status: number) {
+    form.setFieldsValue({ statusId: status });
   }
 
   function applyColor(statusName: string) {
@@ -101,20 +123,35 @@ const TodoList: React.FC = observer(() => {
   }
 
   const handleSubmit = async (values: ToDoCreateDTO | ToDoUpdateDTO) => {
+    const {
+      rangeDates: [createdAt, dueDate],
+    } = form.getFieldsValue(["rangeDates"]);
+
+    console.log(values);
+
+    const localCreatedAt = dayjs(createdAt).format("YYYY-MM-DD");
+    const localDueDate = dayjs(dueDate).format("YYYY-MM-DD");
+    const data = {
+      title: values.title,
+      createdAt: localCreatedAt,
+      dueDate: localDueDate,
+      description: values.description,
+      statusId: values.statusId,
+    };
+    console.log(data);
+
     if (editingTodo) {
       await editTodo(editingTodo.id, {
-        ...values,
+        ...data,
         id: editingTodo.id,
       } as ToDoUpdateDTO);
     } else {
       await addTodo({
-        ...values,
-        statusId: values.statusId,
+        ...data,
       } as ToDoCreateDTO);
     }
     setIsModalOpen(false);
     setEditingTodo(null);
-    console.log(editingTodo);
     await loadTodos();
   };
 
@@ -130,7 +167,7 @@ const TodoList: React.FC = observer(() => {
       title: "Title",
       dataIndex: "title",
       key: "title",
-      render: (text: string) => <span>{text}</span>, // Prevents layout issues
+      render: (text: string) => <span>{text}</span>,
     },
     {
       title: "Description",
@@ -202,40 +239,45 @@ const TodoList: React.FC = observer(() => {
         <Form
           onFinish={handleSubmit}
           initialValues={{
-            statusId: "",
+            statusName: "",
           }}
           form={form}
+          labelCol={{ span: 8 }}
+          wrapperCol={{ span: 16 }}
+          style={{ maxWidth: 600 }}
         >
-          <Form.Item name="title" label="Title" rules={[{ required: true }]}>
+          <Form.Item
+            name="title"
+            label="Title"
+            rules={[{ required: true, message: "Please enter title" }]}
+          >
             <Input />
           </Form.Item>
           <Form.Item
             name="description"
             label="Description"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: "Please enter description" }]}
           >
             <TextArea />
           </Form.Item>
           <Form.Item
-            name="createdAt"
-            label="Start Date"
-            rules={[{ required: true }]}
+            name="rangeDates"
+            rules={[
+              {
+                required: true,
+                message: "Start date or End date cannot be empty",
+              },
+            ]}
+            label="Date Range"
           >
-            <DatePicker />
+            <RangePicker disabledDate={disabledDate} format={dateFormat} />
           </Form.Item>
           <Form.Item
-            name="dueDate"
-            label="Due Date"
-            rules={[{ required: true }]}
-          >
-            <DatePicker />
-          </Form.Item>
-          <Form.Item
-            name="statusId"
+            name="statusName"
             label="Status"
-            rules={[{ required: true }]}
+            rules={[{ required: true, message: "Please enter status" }]}
           >
-            <Select>
+            <Select onSelect={handleStatusIdChange}>
               {statuses.map((status) => (
                 <Option key={status.id} value={status.id}>
                   <span style={{ color: applyColor(status.name) }}>
@@ -244,6 +286,9 @@ const TodoList: React.FC = observer(() => {
                 </Option>
               ))}
             </Select>
+          </Form.Item>
+          <Form.Item name="statusId" hidden={true}>
+            <Input />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">
