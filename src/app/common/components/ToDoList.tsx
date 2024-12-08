@@ -17,15 +17,18 @@ import {
 
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-dayjs.extend(isBetween);
-import TextArea from "antd/es/input/TextArea";
 import updateLocale from "dayjs/plugin/updateLocale";
+import TextArea from "antd/es/input/TextArea";
 
+dayjs.extend(isBetween);
 dayjs.extend(updateLocale);
 dayjs.updateLocale("en", {
   weekStart: 1,
 });
+
 const { Option } = Select;
+const { RangePicker } = DatePicker;
+const dateFormat = "YYYY-MM-DD";
 
 const TodoList: React.FC = observer(() => {
   const {
@@ -42,14 +45,14 @@ const TodoList: React.FC = observer(() => {
   const [editingTodo, setEditingTodo] = useState<ToDo | null>(null);
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
   const [form] = Form.useForm();
+
+  const startOfWeek = dayjs().startOf("week");
+  const endOfWeek = dayjs().endOf("week");
+
   const filteredTodos = filterStatus
     ? todos.filter((todo) => todo.statusName === filterStatus)
     : todos;
-  const { RangePicker } = DatePicker;
-  const dateFormat = "YYYY-MM-DD";
-  const startOfWeek = dayjs().startOf("week");
-  const endOfWeek = dayjs().endOf("week");
-  console.log(startOfWeek, endOfWeek);
+
   const menuItems = [
     { label: "All", key: "all" },
     ...statuses.map((status) => ({
@@ -61,9 +64,9 @@ const TodoList: React.FC = observer(() => {
   ];
 
   const disabledDate = (current: dayjs.Dayjs | null) => {
-    console.log(current);
-    if (!current) return false;
-    return !current.isBetween(startOfWeek, endOfWeek, "day", "[]");
+    return current
+      ? !current.isBetween(startOfWeek, endOfWeek, "day", "[]")
+      : false;
   };
 
   const dropdownMenu: MenuProps = {
@@ -87,8 +90,15 @@ const TodoList: React.FC = observer(() => {
     setEditingTodo(null);
   }
 
-  function handleOpenForm() {
+  function handleOpenForm(todo?: ToDo) {
     resetForm();
+    if (todo) {
+      setEditingTodo(todo);
+      form.setFieldsValue({
+        ...todo,
+        rangeDates: [dayjs(todo.createdAt), dayjs(todo.dueDate)],
+      });
+    }
     setIsModalOpen(true);
   }
 
@@ -97,29 +107,17 @@ const TodoList: React.FC = observer(() => {
     setIsModalOpen(false);
   }
 
-  function handleOpenFormEdit(record: ToDo) {
-    console.log(record);
-    setEditingTodo(record);
-    form.setFieldsValue({
-      ...record,
-      rangeDates: [dayjs(record.createdAt), dayjs(record.dueDate)],
-    });
-    setIsModalOpen(true);
-  }
-
-  function handleStatusIdChange(status: number) {
-    form.setFieldsValue({ statusId: status });
-  }
-
   function applyColor(statusName: string) {
-    if (statusName === "Done") {
-      return "green";
-    } else if (statusName === "In Progress") {
-      return "blue";
-    } else if (statusName === "Pending") {
-      return "orange";
+    switch (statusName) {
+      case "Done":
+        return "green";
+      case "In Progress":
+        return "blue";
+      case "Pending":
+        return "orange";
+      default:
+        return "gray";
     }
-    return "gray";
   }
 
   const handleSubmit = async (values: ToDoCreateDTO | ToDoUpdateDTO) => {
@@ -127,18 +125,13 @@ const TodoList: React.FC = observer(() => {
       rangeDates: [createdAt, dueDate],
     } = form.getFieldsValue(["rangeDates"]);
 
-    console.log(values);
-
-    const localCreatedAt = dayjs(createdAt).format("YYYY-MM-DD");
-    const localDueDate = dayjs(dueDate).format("YYYY-MM-DD");
     const data = {
       title: values.title,
-      createdAt: localCreatedAt,
-      dueDate: localDueDate,
+      createdAt: dayjs(createdAt).format("YYYY-MM-DD"),
+      dueDate: dayjs(dueDate).format("YYYY-MM-DD"),
       description: values.description,
       statusId: values.statusId,
     };
-    console.log(data);
 
     if (editingTodo) {
       await editTodo(editingTodo.id, {
@@ -150,8 +143,8 @@ const TodoList: React.FC = observer(() => {
         ...data,
       } as ToDoCreateDTO);
     }
-    setIsModalOpen(false);
-    setEditingTodo(null);
+
+    handleCloseForm();
     await loadTodos();
   };
 
@@ -191,22 +184,16 @@ const TodoList: React.FC = observer(() => {
       title: "Status",
       dataIndex: "statusName",
       key: "statusName",
-      render: (_: string, record: ToDo) => {
-        return (
-          <>
-            <Tag color={applyColor(record.statusName)} key={record.statusName}>
-              {record.statusName}
-            </Tag>
-          </>
-        );
-      },
+      render: (statusName: string) => (
+        <Tag color={applyColor(statusName)}>{statusName}</Tag>
+      ),
     },
     {
       title: "Actions",
       key: "actions",
       render: (_: string, record: ToDo) => (
         <>
-          <Button onClick={() => handleOpenFormEdit(record)}>Edit</Button>
+          <Button onClick={() => handleOpenForm(record)}>Edit</Button>
           <Button onClick={() => handleDelete(record.id)} danger>
             Delete
           </Button>
@@ -217,7 +204,7 @@ const TodoList: React.FC = observer(() => {
 
   return (
     <>
-      <Button type="primary" onClick={handleOpenForm}>
+      <Button type="primary" onClick={() => handleOpenForm()}>
         Add ToDo
       </Button>
       <Dropdown menu={dropdownMenu} placement="bottom">
@@ -277,7 +264,11 @@ const TodoList: React.FC = observer(() => {
             label="Status"
             rules={[{ required: true, message: "Please enter status" }]}
           >
-            <Select onSelect={handleStatusIdChange}>
+            <Select
+              onSelect={(status: number) =>
+                form.setFieldsValue({ statusId: status })
+              }
+            >
               {statuses.map((status) => (
                 <Option key={status.id} value={status.id}>
                   <span style={{ color: applyColor(status.name) }}>
