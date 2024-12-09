@@ -68,17 +68,9 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
     >
       <Form
         form={form}
-        initialValues={
-          editingTodo
-            ? {
-                ...editingTodo,
-                rangeDates: [
-                  dayjs(editingTodo.createdAt),
-                  dayjs(editingTodo.dueDate),
-                ],
-              }
-            : {}
-        }
+        initialValues={{
+          statusName: "",
+        }}
         onFinish={handleSubmit}
         labelCol={{ span: 8 }}
         wrapperCol={{ span: 16 }}

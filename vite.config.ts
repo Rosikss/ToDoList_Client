@@ -14,4 +14,9 @@ export default defineConfig({
       "@utils": path.resolve(__dirname, "src/app/common/utils"),
     },
   },
+  server: {
+    host: true,
+    strictPort: true,
+    //port: 7080,
+  },
 });
