@@ -96,7 +96,10 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
             { required: true, message: "Start and end dates are required" },
           ]}
         >
-          <RangePicker disabledDate={disabledDate} />
+          <RangePicker
+            disabledDate={disabledDate}
+            minDate={dayjs("01.01.2024")}
+          />
         </Form.Item>
         <Form.Item
           name="statusId"
