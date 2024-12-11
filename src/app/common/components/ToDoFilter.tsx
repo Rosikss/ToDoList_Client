@@ -1,10 +1,9 @@
 import React from "react";
 import { Button, Dropdown, MenuProps } from "antd";
 import { Status } from "@Status/status.model.ts";
-import applyColor from "@utils/ApplyColor.ts";
 
 interface FilterDropdownProps {
-  statuses: { id: number; name: string }[];
+  statuses: Status[];
   setFilterStatus: (status: string | null) => void;
 }
 
@@ -15,9 +14,7 @@ const ToDoFilter: React.FC<FilterDropdownProps> = ({
   const menuItems: MenuProps["items"] = [
     { label: "All", key: "all" },
     ...statuses.map((status: Status) => ({
-      label: (
-        <span style={{ color: applyColor(status.name) }}>{status.name}</span>
-      ),
+      label: <span style={{ color: status.color }}>{status.name}</span>,
       key: status.name,
     })),
   ];

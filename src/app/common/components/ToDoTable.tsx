@@ -1,17 +1,19 @@
 import React from "react";
 import { Table, Button, Tag } from "antd";
 import { ToDo } from "@ToDo/todo.model.ts";
-import applyColor from "@utils/ApplyColor";
 import dayjs from "dayjs";
+import { Status } from "@Status/status.model.ts";
 
 interface TodoTableProps {
   todos: ToDo[];
+  statuses: Status[];
   handleEdit: (todo: ToDo) => void;
   handleDelete: (id: number) => void;
 }
 
 const TodoTable: React.FC<TodoTableProps> = ({
   todos,
+  statuses,
   handleEdit,
   handleDelete,
 }) => {
@@ -43,8 +45,12 @@ const TodoTable: React.FC<TodoTableProps> = ({
       title: "Status",
       dataIndex: "statusName",
       key: "statusName",
-      render: (statusName: string) => (
-        <Tag color={applyColor(statusName)}>{statusName}</Tag>
+      render: (_: string, record: ToDo) => (
+        <Tag
+          color={statuses.find((status) => status.id == record.statusId)?.color}
+        >
+          {record.statusName}
+        </Tag>
       ),
     },
     {

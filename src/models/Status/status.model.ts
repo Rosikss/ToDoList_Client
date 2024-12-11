@@ -1,14 +1,14 @@
 ﻿export interface Status {
-    id: number;
-    name: string;
+  id: number;
+  name: string;
+  color: string;
 }
 
-
 export interface StatusCreateDTO {
-    name: string;
+  name: string;
+  color: string;
 }
 
 export interface StatusUpdateDTO extends StatusCreateDTO {
-    id: number;
+  id: number;
 }
-

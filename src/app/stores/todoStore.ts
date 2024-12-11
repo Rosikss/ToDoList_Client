@@ -4,17 +4,14 @@ import {
   createTodo,
   updateTodo,
   deleteTodo,
-  fetchStatuses,
-} from "../api/todoApi";
+} from "../api/todoApi.ts";
 import { ToDo, ToDoCreateDTO, ToDoUpdateDTO } from "@ToDo/todo.model.ts";
-import { Status } from "@Status/status.model.ts";
 import "react-toastify/dist/ReactToastify.css";
 import showErrorMessage from "@utils/ErrorToastMessage.ts";
 import { AxiosError } from "axios";
 
 class TodoStore {
   todos: ToDo[] = [];
-  statuses: Status[] = [];
 
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
@@ -25,19 +22,6 @@ class TodoStore {
       const { data } = await fetchTodos();
       runInAction(() => {
         this.todos = data;
-      });
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        showErrorMessage(error);
-      }
-    }
-  }
-
-  async loadStatuses() {
-    try {
-      const { data } = await fetchStatuses();
-      runInAction(() => {
-        this.statuses = data;
       });
     } catch (error) {
       if (error instanceof AxiosError) {

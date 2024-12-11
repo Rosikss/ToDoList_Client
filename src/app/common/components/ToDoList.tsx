@@ -10,6 +10,7 @@ import TodoTable from "@/app/common/components/ToDoTable.tsx";
 import TodoFormModal from "@/app/common/components/ToDoFormModal.tsx";
 import { ToDo } from "@ToDo/todo.model.ts";
 import { Button, Form, Modal } from "antd";
+import { statusStore } from "@stores/statusStore.ts";
 
 dayjs.extend(isBetween);
 dayjs.extend(updateLocale);
@@ -18,15 +19,9 @@ dayjs.updateLocale("en", {
 });
 
 const TodoList: React.FC = observer(() => {
-  const {
-    todos,
-    statuses,
-    loadTodos,
-    loadStatuses,
-    addTodo,
-    editTodo,
-    removeTodo,
-  } = todoStore;
+  const { todos, loadTodos, addTodo, editTodo, removeTodo } = todoStore;
+
+  const { loadStatuses, statuses } = statusStore;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<ToDo | null>(null);
@@ -81,6 +76,7 @@ const TodoList: React.FC = observer(() => {
       <ToDoFilter statuses={statuses} setFilterStatus={setFilterStatus} />
       <TodoTable
         todos={filteredTodos}
+        statuses={statuses}
         handleEdit={handleOpenForm}
         handleDelete={handleDelete}
       />
