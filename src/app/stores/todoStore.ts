@@ -30,10 +30,11 @@ class TodoStore {
     }
   }
 
-  async addTodo(todo: ToDoCreateDTO) {
+  async addTodo(todo: ToDo) {
     try {
-      const { data } = await createTodo(todo);
+      const { data } = await createTodo(todo as ToDoCreateDTO);
       runInAction(() => {
+        data.statusName = todo.statusName;
         this.todos.push(data);
       });
     } catch (error) {

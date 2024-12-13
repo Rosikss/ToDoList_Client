@@ -22,9 +22,9 @@ interface TodoFormModalProps {
   onClose: () => void;
   editingTodo: ToDo | null;
   statuses: Status[];
-  addTodo: (data: ToDoCreateDTO) => Promise<void>;
+  addTodo: (data: ToDo) => Promise<void>;
+  onStatusDelete: (statusId: number) => void;
   editTodo: (id: number, data: ToDoUpdateDTO) => Promise<void>;
-  reloadTodos: () => Promise<void>;
   form: FormInstance;
 }
 
@@ -34,11 +34,13 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
   editingTodo,
   statuses,
   addTodo,
+  onStatusDelete,
   editTodo,
-  reloadTodos,
   form,
 }) => {
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isOptionsOpen, setIsOptionsOpen] = useState(false);
+  const [statusModel, setStatusModel] = useState<null | Status>(null);
   const [statusForm] = Form.useForm();
 
   const handleSubmit = async (values: ToDoCreateDTO | ToDoUpdateDTO) => {
@@ -46,23 +48,32 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
       rangeDates: [createdAt, dueDate],
     } = form.getFieldsValue(["rangeDates"]);
 
+    const statusName = statuses.find(
+      (status) => status.id === values.statusId,
+    )?.name;
+
     const payload = {
+      id: 0,
       title: values.title,
       description: values.description,
       createdAt: dayjs(createdAt).format("YYYY-MM-DD"),
       dueDate: dayjs(dueDate).format("YYYY-MM-DD"),
       statusId: values.statusId,
+      statusName: statusName || "",
     };
 
     if (editingTodo) {
       await editTodo(editingTodo.id, { ...payload, id: editingTodo.id });
     } else {
-      await addTodo(payload as ToDoCreateDTO);
+      await addTodo(payload);
     }
 
     onClose();
-    await reloadTodos();
   };
+
+  function handleOptionsMenuVisibility() {
+    setIsOptionsOpen((isOptionsOpen) => !isOptionsOpen);
+  }
 
   return (
     <>
@@ -127,16 +138,45 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
                   </Button>
                 </>
               )}
+              open={isOptionsOpen}
+              onClick={handleOptionsMenuVisibility}
             >
               {statuses.map((status) => (
                 <Select.Option key={status.id} value={status.id}>
-                  <span
+                  <div
                     style={{
-                      color: status.color,
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
                     }}
                   >
-                    {status.name}
-                  </span>
+                    <span style={{ color: status.color }}>{status.name}</span>
+                    <div>
+                      <Button
+                        type="link"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setIsOptionsOpen(false);
+                          setIsStatusModalOpen(true);
+                          setStatusModel(status);
+                          statusForm.setFieldsValue(status);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                      <Button
+                        type="link"
+                        danger
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onStatusDelete(status.id);
+                          setIsOptionsOpen(false);
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </div>
+                  </div>
                 </Select.Option>
               ))}
             </Select>
@@ -152,6 +192,8 @@ const TodoFormModal: React.FC<TodoFormModalProps> = ({
         setIsStatusModalOpen={setIsStatusModalOpen}
         isStatusModalOpen={isStatusModalOpen}
         statusForm={statusForm}
+        statusModel={statusModel}
+        setStatusModel={setStatusModel}
       />
     </>
   );

@@ -8,9 +8,13 @@ import {
   Input,
   Modal,
 } from "antd";
-import { statusStore } from "@stores/statusStore.ts";
-import { StatusCreateDTO } from "@Status/status.model.ts";
-import React, { useState } from "react";
+import {
+  Status,
+  StatusCreateDTO,
+  StatusUpdateDTO,
+} from "@Status/status.model.ts";
+import React, { useContext, useState } from "react";
+import { StoreContext } from "@stores/storeContext.tsx";
 
 type Color = Extract<
   GetProp<ColorPickerProps, "value">,
@@ -22,15 +26,21 @@ interface TodoFormModalProps {
   isStatusModalOpen: boolean;
   setIsStatusModalOpen: (isStatusModalOpen: boolean) => void;
   statusForm: FormInstance;
+  statusModel: Status | null;
+  setStatusModel: (statusModel: Status | null) => void;
 }
 
 const StatusFormModal: React.FC<TodoFormModalProps> = ({
   isStatusModalOpen,
   setIsStatusModalOpen,
   statusForm,
+  statusModel,
+  setStatusModel,
 }) => {
-  const { addStatus } = statusStore;
-  const [colorHex, setColorHex] = useState<Color>("#1677ff");
+  const { statusStore, todoStore } = useContext(StoreContext);
+  const [colorHex, setColorHex] = useState<Color>(
+    statusModel?.color || "#1390be",
+  );
   const [formatHex, setFormatHex] = useState<Format | undefined>("hex");
   const hexString = React.useMemo<string>(
     () => (typeof colorHex === "string" ? colorHex : colorHex?.toHexString()),
@@ -43,7 +53,25 @@ const StatusFormModal: React.FC<TodoFormModalProps> = ({
       color: hexString,
     };
 
-    await addStatus(payload as StatusCreateDTO);
+    if (statusModel) {
+      await statusStore.editStatus(statusModel.id, {
+        id: statusModel.id,
+        ...payload,
+      } as StatusUpdateDTO);
+      todoStore.todos = todoStore.todos.map((todo) =>
+        todo.statusId === statusModel.id
+          ? {
+              ...todo,
+              statusName: payload.name,
+              statusColor: payload.color,
+            }
+          : todo,
+      );
+    } else {
+      await statusStore.addStatus(payload as StatusCreateDTO);
+    }
+
+    setStatusModel(null);
     statusForm.resetFields();
     setIsStatusModalOpen(false);
   }
@@ -51,11 +79,12 @@ const StatusFormModal: React.FC<TodoFormModalProps> = ({
   return (
     <>
       <Modal
-        title="Add New Status"
+        title={statusModel ? "Edit Status" : "Add Status"}
         open={isStatusModalOpen}
         onCancel={() => {
           setIsStatusModalOpen(false);
           statusForm.resetFields();
+          setStatusModel(null);
         }}
         footer={null}
       >
